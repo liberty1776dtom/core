@@ -42,12 +42,7 @@ trait Checksums {
 	public function userUploadsFileToWithChecksumUsingTheAPI(
 		$user, $source, $destination, $checksum
 	) {
-		$file = \GuzzleHttp\Stream\Stream::factory(
-			\fopen(
-				$this->acceptanceTestsDirLocation() . $source,
-				'r'
-			)
-		);
+		$file = \file_get_contents($this->acceptanceTestsDirLocation() . $source);
 		$this->response = $this->makeDavRequest(
 			$user,
 			'PUT',
@@ -143,7 +138,7 @@ trait Checksums {
 	 * @throws \Exception
 	 */
 	public function theHeaderChecksumShouldMatch($checksum) {
-		if ($this->response->getHeader('OC-Checksum') !== $checksum) {
+		if ($this->response->getHeader('OC-Checksum')[0] !== $checksum) {
 			throw new \Exception(
 				"Expected $checksum, got "
 				. $this->response->getHeader('OC-Checksum')
@@ -206,7 +201,6 @@ trait Checksums {
 		$user, $num, $total, $data, $destination, $checksum
 	) {
 		$num -= 1;
-		$data = \GuzzleHttp\Stream\Stream::factory($data);
 		$file = "$destination-chunking-42-$total-$num";
 		$this->response = $this->makeDavRequest(
 			$user,
