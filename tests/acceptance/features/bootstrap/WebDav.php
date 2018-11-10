@@ -1037,11 +1037,13 @@ trait WebDav {
 	 * @return void
 	 */
 	public function jobStatusValuesShouldMatchRegEx($user, $table) {
-		$url = $this->response->getHeader("OC-JobStatus-Location");
+		$headerArray = $this->response->getHeader("OC-JobStatus-Location");
+		$url = $headerArray[0];
 		$url = $this->getBaseUrlWithoutPath() . $url;
 		$response = HttpRequestHelper::get($url, $user, $this->getPasswordForUser($user));
-		$result = \json_decode($response->getBody()->getContents(), true);
-		PHPUnit_Framework_Assert::assertNotNull($result, "'$response' is not valid JSON");
+		$contents = $response->getBody()->getContents();
+		$result = \json_decode($contents, true);
+		PHPUnit_Framework_Assert::assertNotNull($result, "'$contents' is not valid JSON");
 		foreach ($table->getTable() as $row) {
 			$expectedKey = $row[0];
 			PHPUnit_Framework_Assert::assertArrayHasKey(
@@ -2785,12 +2787,17 @@ trait WebDav {
 		foreach ($table->getTable() as $header) {
 			$headerName = $header[0];
 			$headerValue = $this->response->getHeader($headerName);
-			//Note: according to the documentation of getHeader it must return null
-			//if the header does not exist, but its returning an empty string
+			//Note: getHeader returns an empty array if the named header does not exist
+			if (isset($headerValue[0])) {
+				$headerValue0 = $headerValue[0];
+			} else {
+				$headerValue0 = '';
+			}
+
 			PHPUnit_Framework_Assert::assertEmpty(
 				$headerValue,
 				"header $headerName should not exist " .
-				"but does and is set to $headerValue"
+				"but does and is set to $headerValue0"
 			);
 		}
 	}
@@ -2811,7 +2818,8 @@ trait WebDav {
 				$expectedHeaderValue, ['preg_quote' => ['/'] ]
 			);
 			
-			$returnedHeader = $this->response->getHeader($headerName);
+			$returnedHeaders = $this->response->getHeader($headerName);
+			$returnedHeader = $returnedHeaders[0];
 			PHPUnit_Framework_Assert::assertNotFalse(
 				(bool)\preg_match($expectedHeaderValue, $returnedHeader),
 				"'$expectedHeaderValue' does not match '$returnedHeader'"
